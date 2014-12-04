@@ -1,0 +1,9 @@
+*.arff
+.project
+.settings
+bin
+libs
+blogstest
+blogstrain
+spammail
+.classpath
