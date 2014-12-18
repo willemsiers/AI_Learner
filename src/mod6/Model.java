@@ -8,25 +8,28 @@ import java.util.Iterator;
 
 public class Model {
 
-	public static double K = 1f;
+	public static double K = 0.0000001d;
 	public static int MIN_FREQ = 1;
 	public static int MAX_FREQ = Integer.MAX_VALUE;
 
 	public int totalCount;
 	public HashMap<String, Integer> vocabulary;
 
-	public Model(String name) throws IOException {
+	public String name;
+
+	public Model(String path, String name) throws IOException {
+		this.name = name;
+
 		StringBuilder builder = new StringBuilder();
-		File[] files = Learner.getFiles("blogstrain/" + name);
+		File[] files = Learner.getFiles("blogstrain/" + path);
 		String sep = " ";
 		for (File file : files) {
-			builder.append(Learner.readFile(file.getAbsolutePath(),
-					Charset.defaultCharset()));
+			builder.append(Learner.readFile(file.getAbsolutePath(), Charset.defaultCharset()));
 			builder.append(sep);
 		}
-		HashMap<String, Integer> vocabulary = new HashMap<String, Integer>();
+		vocabulary = new HashMap<String, Integer>();
 		String[] fileText = Tokenizer.tokenize(builder.toString());
-		int totalCount = 0;
+		totalCount = 0;
 		for (String word : fileText) {
 			if (!word.equals(" ") && !word.equals("")) {
 				totalCount++;
@@ -35,22 +38,36 @@ public class Model {
 					count = 0;
 				}
 				vocabulary.put(word, count + 1);
-			}else{
-				System.out.println("found: "+word);
+			} else {
+				System.out.println("found: " + word);
 			}
 		}
 
-		// filter low frequency words
-		for (Iterator it = vocabulary.keySet().iterator(); it.hasNext();) {
+		//filterByFrequency();
+	}
+
+	// filter low or high frequency words
+	private void filterByFrequency() {
+		for (Iterator<String> it = vocabulary.keySet().iterator(); it.hasNext();) {
 			String key = (String) it.next();
 			Integer freq = vocabulary.get(key);
 			if (freq < MIN_FREQ || freq > MAX_FREQ) {
 				it.remove();
+				totalCount-=freq;
 			}
-		}
+		}		
+	}
 
-		this.vocabulary = vocabulary;
-		this.totalCount = totalCount;
+	public void addData(Classification classification) {
+		
+		for (String word : classification.words) {
+			totalCount++;
+			Integer count = vocabulary.get(word);
+			if (count == null) {
+				count = 0;
+			}
+			vocabulary.put(word, count + 1);
+		}
 	}
 
 	public double getProbability(String word, int docSize, int vocabSize) {
